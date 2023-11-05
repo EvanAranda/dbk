@@ -1,0 +1,4 @@
+#!/bin/bash
+
+export WORKING_DIR="$(pwd)/.dev"
+export DB_URL="sqlite:///$WORKING_DIR/db.sqlite3"

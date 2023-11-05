@@ -1,0 +1,2 @@
+class DbkError(Exception):
+    pass

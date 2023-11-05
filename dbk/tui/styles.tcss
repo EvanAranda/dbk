@@ -1,0 +1,41 @@
+#sidebar {
+    dock: left;
+    width: 16%;
+}
+
+.column {
+    width: 1fr;
+}
+
+NewConnectionModal {
+    align: center middle;
+}
+
+#dialog {
+    padding: 0 1;
+    width: 60;
+    height: 25;
+    border: thick $background 80%;
+    background: $surface;
+}
+
+#modal-buttons {
+    grid-size: 2;
+    grid-rows: 1fr;
+    grid-gutter: 1 2;
+}
+
+#modal-buttons > Button {
+    width: 100%;
+}
+
+#title {
+    height: 1fr;
+    width: 1fr;
+    content-align: center middle;
+}
+
+.buttons {
+    height: auto;
+    width: auto;
+}

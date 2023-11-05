@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dbk"
+version = "0.0.1"
+requires-python = ">=3.12"
+dependencies = [
+    "pandas",
+    "numpy",
+    "python-dotenv",
+    "pydantic",
+    "pydantic-settings",
+    "sqlalchemy",
+    "jinja2",
+    "textual",
+]
+optional-dependencies = { "dev" = [
+    "pytest",
+    "pytest-cov",
+    "black",
+    "flake8",
+    "isort",
+] }
+
+[tool.setuptools]
+packages = ["dbk"]
