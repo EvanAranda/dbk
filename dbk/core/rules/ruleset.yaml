@@ -1,0 +1,17 @@
+subscriptions:
+  tests:
+    adsf:
+      - desc contains adsf
+    is_subscription:
+      - type is expense
+      - or:
+          - desc contains subscription
+          - $adsf
+  rules:
+    spotify:
+      test:
+        - ::is_expense
+        - desc contains spotify
+      then:
+        - set category to music
+        - set tags to spotify
