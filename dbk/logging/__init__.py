@@ -1,7 +1,7 @@
 import logging.config
 
 
-def setup_logging():
+def setup_logging(log_file: str):
     logging.config.dictConfig(
         {
             "version": 1,
@@ -15,7 +15,7 @@ def setup_logging():
             "handlers": {
                 "file": {
                     "class": "logging.FileHandler",
-                    "filename": "dbk.log",
+                    "filename": log_file,
                     "formatter": "default",
                 },
             },

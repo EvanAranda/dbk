@@ -10,6 +10,12 @@ from .transactions import Transactions
 
 
 class NavTree(Navigator):
+    DEFAULT_CSS = """
+    NavTree > Tree {
+        padding: 1 2;
+    }
+    """
+
     def compose(self):
         tree = Tree("root", id="nav-tree")
         tree.show_root = False

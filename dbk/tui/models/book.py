@@ -87,29 +87,7 @@ class BookModel:
         # 2. when user provides data or request a resync, other data like transactions and dynamic accounts can be populated.
 
     def sync_connection(self, conn: models.Connection):
-        self._workers.submit(Job(time.sleep, 3))
         return self._workers.submit(jobs.sync_data_sources(conn.id))
-        # with self._session_factory() as s:
-        #     s.expire_on_commit = False
-        #     s.add(conn)  # re-attach
-
-        #     log.debug("begin sync of connection %s", conn.conn_name)
-
-        #     try:
-        #         sources = sync.find_data_sources(s, conn.id)
-        #         log.debug("found %s data sources to sync", len(sources))
-
-        #         for source in sources:
-        #             with s.begin_nested():
-        #                 sync.sync_data_source(s, conn, source)
-
-        #         conn.last_synced = datetime.now()
-        #         s.commit()
-
-        #         log.info("synced connection %s", conn.conn_name)
-        #     except Exception as e:
-        #         log.error("sync of connection %s failed", conn.conn_name, exc_info=e)
-        #         raise
 
     def create_account(self, args: CreateAccountArgs):
         with self._session_factory() as s, s.begin():

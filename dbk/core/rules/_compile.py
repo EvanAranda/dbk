@@ -12,10 +12,9 @@ RuleSetDoc = dict[str, RuleDoc]
 RuleSetKey = Literal["tests", "actions", "rules"]
 
 
-def compile_rules(yaml_str: str) -> Scope:
+def compile_rules(yaml_str: str) -> dict[str, RuleSet]:
     doc = yaml.load(yaml_str, Loader=yaml.CLoader)
-    scope = Scope({k: compile_rule_set(k, v) for k, v in doc.items()})
-    return scope
+    return {k: compile_rule_set(k, v) for k, v in doc.items()}
 
 
 def resolve_references(scope: Scope) -> None:

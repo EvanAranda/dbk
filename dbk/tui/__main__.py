@@ -15,7 +15,7 @@ user_config = UserConfig()
 user_config.working_dir.mkdir(parents=True, exist_ok=True)
 os.chdir(user_config.working_dir)
 
-setup_logging()
+setup_logging("dbk.tui.log")
 
 engine = db.make_connection(root_config.db_url)
 session = orm.sessionmaker(bind=engine)

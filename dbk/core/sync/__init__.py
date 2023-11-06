@@ -3,12 +3,12 @@ import logging
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import BinaryIO
+from typing import BinaryIO, Sequence
 
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
 
-from dbk.core import models, persist, providers
+from dbk.core import models, persist, providers, rules
 
 log = logging.getLogger(__name__)
 
@@ -35,6 +35,20 @@ def find_data_sources(session: orm.Session, conn_id: int, where="unsynced"):
             )
 
     return session.scalars(stmt).all()
+
+
+def sync_connection(
+    session: orm.Session,
+    connection: models.Connection,
+):
+    try:
+        provider = providers.find_provider(connection.provider_id)
+        ctx = providers.SyncContext(session, provider, connection)
+        provider.sync(ctx)
+    except Exception as e:
+        raise
+    finally:
+        connection.last_synced = datetime.now()
 
 
 def sync_data_source(
@@ -104,3 +118,7 @@ def create_file_data_source(
         session.commit()
 
     return ds
+
+
+def apply_rules(txs: Sequence[models.Transaction], scope: rules.Scope):
+    pass

@@ -67,6 +67,7 @@ class Connection(Base, _ContainsTransactions):
             "book_id",
             "provider_id",
             "conn_name",
+            name="unique_conn_per_book",
         ),
     )
     id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
@@ -96,6 +97,7 @@ class DataSource(Base, _ContainsTransactions):
             "conn_id",
             "name",
             "hash",
+            name="unqiue_data_source_per_connection",
         ),
     )
     id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
@@ -118,6 +120,14 @@ class AccountType(enum.StrEnum):
 
 class Account(Base):
     __tablename__ = "accounts"
+    __table_args__ = (
+        sa.UniqueConstraint(
+            "book_id",
+            "category",
+            name="unique_category_per_book",
+        ),
+    )
+
     id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
     book_id: orm.Mapped[int] = orm.mapped_column(
         sa.ForeignKey(Book.id, ondelete="cascade"),
@@ -125,8 +135,11 @@ class Account(Base):
     name: orm.Mapped[str]
     account_type: orm.Mapped[AccountType]
     is_root: orm.Mapped[bool]
+    """Whether this account is a root account (i.e. not allowed to have a parent)"""
     is_virtual: orm.Mapped[bool]
+    """Whether this account is a group of other accounts."""
     currency: orm.Mapped[str | None]
+    """Currency of this account. Cannot be None if this account is not a group."""
     parent_id: orm.Mapped[int | None] = orm.mapped_column(
         sa.ForeignKey("accounts.id", ondelete="cascade")
     )
@@ -134,6 +147,13 @@ class Account(Base):
         sa.ForeignKey(Connection.id, ondelete="cascade")
     )
     conn_label: orm.Mapped[str | None]
+    """Label assigned by a connection provider to identify this account."""
+
+    category: orm.Mapped[str | None]
+    """
+    Unique category that describes the purpose of this account. 
+    Can be used by rules to automatically assign transactions to this account.
+    """
 
     children: orm.Mapped[list["Account"]] = orm.relationship(back_populates="parent")
     parent: orm.Mapped["Account | None"] = orm.relationship(
@@ -160,6 +180,14 @@ class TransactionType(enum.StrEnum):
 
 class Transaction(Base):
     __tablename__ = "transactions"
+    __table_args__ = (
+        sa.UniqueConstraint(
+            "book_id",
+            "unique_hash",
+            name="unique_transaction_per_book",
+        ),
+    )
+
     id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
     book_id: orm.Mapped[int] = orm.mapped_column(
         sa.ForeignKey(Book.id, ondelete="cascade"),
@@ -176,6 +204,9 @@ class Transaction(Base):
     debit_account_id: orm.Mapped[int | None] = orm.mapped_column(
         sa.ForeignKey(Account.id, ondelete="cascade"),
     )
+    duplicate_id: orm.Mapped[int | None] = orm.mapped_column(
+        sa.ForeignKey("transactions.id")
+    )
     type: orm.Mapped[TransactionType]
     time: orm.Mapped[datetime]
     description: orm.Mapped[str]
@@ -183,7 +214,7 @@ class Transaction(Base):
     credit_amount: orm.Mapped[float | None]
     debit_amount: orm.Mapped[float | None]
     external_ref: orm.Mapped[str | None]
-    unique_hash: orm.Mapped[str] = orm.mapped_column(sa.String(32), unique=True)
+    unique_hash: orm.Mapped[str] = orm.mapped_column(sa.String(32))
 
     credit_account: orm.Mapped[Account | None] = orm.relationship(
         foreign_keys=[credit_account_id]

@@ -13,8 +13,7 @@ def test_resolve_local_references():
                 test: ::foo
                 then: ::foo
     """
-    scope = rules.compile_rules(yaml)
-
+    scope = rules.Scope(rules.compile_rules(yaml))
     ruleset = scope.rulesets["test"]
 
     foo_test_ref = ruleset.rules["foo"].test
@@ -42,7 +41,7 @@ def test_resolve_external_references():
                 - desc contains foo
     """
 
-    scope = rules.compile_rules(yaml)
+    scope = rules.Scope(rules.compile_rules(yaml))
     rules.resolve_references(scope)
 
     bar_test = scope.rulesets["external"].tests["bar"]

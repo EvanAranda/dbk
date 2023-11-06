@@ -1,10 +1,12 @@
 import logging
+from pathlib import Path
 
 import sqlalchemy.orm as orm
 from textual.app import App
 from textual.widgets import Footer, Header
 
 from dbk.background import WorkerPool
+from dbk.core import rules
 from dbk.tui.widgets.book import Book, BookModel
 from dbk.tui.widgets.nav import Navigator, RouteInfo
 from dbk.tui.widgets.routing import Routable, Router
@@ -22,12 +24,27 @@ class MyAppModel:
     ):
         self.session_factory = session_factory
         self.background_workers = background_workers
+        self._rules: rules.Scope | None = None
 
     def book_model(self, book_id: int):
         return BookModel(book_id, self.session_factory, self.background_workers)
 
     def transactions_model(self):
-        return TransactionsModel(self.session_factory)
+        return TransactionsModel(self.session_factory, self.rules)
+
+    def rules(self):
+        if self._rules is None:
+            self._rules = rules.Scope()
+
+            rule_files = ["../rulesets/subscriptions.yaml"]
+            for rule_file in rule_files:
+                rule_file = Path(rule_file)
+                assert rule_file.exists()
+                self._rules.rulesets.update(rules.compile_rules(rule_file.read_text()))
+
+            rules.resolve_references(self._rules)
+
+        return self._rules
 
 
 class MyApp(App, Routable):

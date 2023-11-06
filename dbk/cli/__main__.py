@@ -3,12 +3,10 @@ import traceback
 
 from dbk.cli import main
 from dbk.errors import DbkError
-from dbk.logging import setup_logging
 
 env = os.getenv("DBK_ENV", "dev")
 
 try:
-    setup_logging()
     main()
 except DbkError as e:
     print(str(e))

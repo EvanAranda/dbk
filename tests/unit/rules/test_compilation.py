@@ -75,7 +75,7 @@ class TestCompileYaml:
                     test: ::foo
                     then: ::foo
         """
-        scope = rules.compile_rules(yaml)
+        scope = rules.Scope(rules.compile_rules(yaml))
         assert len(scope.rulesets) == 1
 
         ruleset = scope.rulesets["test"]
