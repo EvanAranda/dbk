@@ -77,7 +77,6 @@ class Connection(Base, _ContainsTransactions):
     provider_id: orm.Mapped[str]
     provider_data: orm.Mapped[dict[str, Any]] = orm.mapped_column(sa.JSON)
     conn_name: orm.Mapped[str]
-    last_synced: orm.Mapped[datetime | None]
 
     book: orm.Mapped[Book] = orm.relationship(back_populates="connections")
     accounts: orm.Mapped[list["Account"]] = orm.relationship(
@@ -109,6 +108,8 @@ class DataSource(Base, _ContainsTransactions):
     hash: orm.Mapped[str | None]
     last_synced: orm.Mapped[datetime | None]
     last_sync_error: orm.Mapped[str | None]
+
+    connection: orm.Mapped[Connection] = orm.relationship()
 
 
 class AccountType(enum.StrEnum):
@@ -182,9 +183,13 @@ class Transaction(Base):
     __tablename__ = "transactions"
     __table_args__ = (
         sa.UniqueConstraint(
-            "book_id",
-            "unique_hash",
-            name="unique_transaction_per_book",
+            "conn_id",
+            "time",
+            "description",
+            "credit_amount",
+            "debit_amount",
+            name="unique_transaction_per_connection",
+            sqlite_on_conflict="IGNORE",
         ),
     )
 
@@ -214,7 +219,6 @@ class Transaction(Base):
     credit_amount: orm.Mapped[float | None]
     debit_amount: orm.Mapped[float | None]
     external_ref: orm.Mapped[str | None]
-    unique_hash: orm.Mapped[str] = orm.mapped_column(sa.String(32))
 
     credit_account: orm.Mapped[Account | None] = orm.relationship(
         foreign_keys=[credit_account_id]

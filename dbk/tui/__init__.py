@@ -6,7 +6,7 @@ from textual.app import App
 from textual.widgets import Footer, Header
 
 from dbk.background import WorkerPool
-from dbk.core import rules
+from dbk.core import persist, rules
 from dbk.tui.widgets.book import Book, BookModel
 from dbk.tui.widgets.nav import Navigator, RouteInfo
 from dbk.tui.widgets.routing import Routable, Router
@@ -21,13 +21,17 @@ class MyAppModel:
         self,
         session_factory: orm.sessionmaker,
         background_workers: WorkerPool,
+        storage: persist.Storage,
     ):
         self.session_factory = session_factory
         self.background_workers = background_workers
+        self.storage = storage
         self._rules: rules.Scope | None = None
 
     def book_model(self, book_id: int):
-        return BookModel(book_id, self.session_factory, self.background_workers)
+        return BookModel(
+            book_id, self.session_factory, self.background_workers, self.storage
+        )
 
     def transactions_model(self):
         return TransactionsModel(self.session_factory, self.rules)

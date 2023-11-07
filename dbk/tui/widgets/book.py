@@ -90,7 +90,7 @@ class ConnectionsList(Navigator):
                 ci = ConnectionItem(conn)
                 row = self._table.add_row(
                     conn.conn_name,
-                    conn.last_synced.strftime("%Y-%m-%d") if conn.last_synced else "-",
+                    "",  # TODO: add last synced
                     key=str(conn.id),
                 )
                 self._rows[row] = ci
@@ -107,8 +107,12 @@ class ConnectionsList(Navigator):
         # conn_item.syncing = True
         try:
             self.app.notify(f"Syncing {conn.conn_name}...", severity="information")
-            result = await self._model.sync_connection(conn)
+            await self._model.sync_connection(conn)
             self.app.notify(f"Synced {conn.conn_name}", severity="information")
+
+            self.app.notify(f"Apply rules...", severity="information")
+            await self._model.apply_rules()
+            self.app.notify(f"Finished rules", severity="information")
         except Exception as e:
             log.exception("sync failed")
             self.app.notify(f"Failed to sync {conn.conn_name}", severity="error")
@@ -123,19 +127,6 @@ class ConnectionsList(Navigator):
 
     def _conn_id(self, conn: models.Connection) -> str:
         return f"conn-{conn.id}"
-
-    def _calc_title(self, conn: models.Connection, syncing=False):
-        if syncing:
-            return f"{conn.conn_name} [bold yellow](syncing)[/bold yellow]"
-        elif conn.last_synced:
-            elapsed = datetime.now() - conn.last_synced
-            if elapsed.days < 1:
-                return f"{conn.conn_name} [bold green](synced today)[/bold green]"
-            else:
-                days = "days" if elapsed.days > 1 else "day"
-                return f"{conn.conn_name} [bold orange](synced {elapsed.days} {days} ago)[/bold orange]"
-        else:
-            return f"{conn.conn_name} [bold red](not synced)[/bold red]"
 
 
 class AccountTree(Navigator):

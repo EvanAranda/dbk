@@ -3,7 +3,7 @@ from typing import Any, Callable, Protocol, runtime_checkable
 
 from dbk.core.models import Transaction
 
-from ..models import Transaction
+from ..models import Transaction, Account, AccountType, TransactionType
 
 
 @dataclass
@@ -111,9 +111,9 @@ class FieldTest(Test, Visitable):
         )
 
     def __visit__(self, cb: Callable[[Any], None]) -> None:
-        cb(self.field)
-        cb(self.operator)
-        cb(self.operand)
+        self.try_visit(self.field, cb)
+        self.try_visit(self.operator, cb)
+        self.try_visit(self.operand, cb)
 
 
 @dataclass
@@ -147,11 +147,14 @@ class OrTest(Test, Visitable):
 
 
 @dataclass
-class NotTest(Test):
+class NotTest(Test, Visitable):
     test: Test
 
     def __call__(self, tx: Transaction) -> bool:
         return not self.test(tx)
+
+    def __visit__(self, cb: Callable[[Any], None]) -> None:
+        self.try_visit(self.test, cb)
 
 
 @dataclass
@@ -182,9 +185,6 @@ class RuleSet(Visitable):
 
     rules: dict[str, Rule] = field(default_factory=dict)
     """Rules that are applied in order until one succeeds."""
-
-    dependencies: dict[str, Any] = field(default_factory=dict)
-    """Other rulesets this depends on (has references to it's members.)"""
 
     def __call__(self, tx: Transaction) -> bool:
         for rule in self.rules.values():
@@ -240,14 +240,53 @@ class ReferencedAction(Action, Reference[Action]):
 
 
 @dataclass
-class SetField(Action):
+class SetField(Action, Visitable):
     field: str
     value: Value[Any]
 
     def __call__(self, tx: Transaction) -> None:
         setattr(tx, self.field, self.value.value)
 
+    def __visit__(self, cb: Callable[[Any], None]) -> None:
+        self.try_visit(self.field, cb)
+        self.try_visit(self.value, cb)
+
+
+class Context:
+    def __init__(self, book_id: int):
+        self.book_id = book_id
+
+    def expense_category(
+        self,
+    ):
+        pass
+
 
 @dataclass
-class Scope:
+class CategorizeExpense(Action):
+    categories: list[str] = field(default_factory=list)
+
+    def __call__(self, tx: Transaction) -> None:
+        if tx.credit_account is None:
+            # this transaction has to be a spend, meaning it already has a debit account
+            return
+
+        for cat in reversed(self.categories):
+            accts = ctx.expense_category(cat)
+
+        # get the correct expense account somehow
+        expense_acct: Account
+
+        # update fields
+        tx.debit_account = expense_acct
+        tx.debit_amount = tx.credit_amount
+        tx.type = TransactionType.spend
+
+
+@dataclass
+class Scope(Visitable):
     rulesets: dict[str, RuleSet] = field(default_factory=dict)
+
+    def __visit__(self, cb: Callable[[Any], None]) -> None:
+        for ruleset in self.rulesets.values():
+            self.try_visit(ruleset, cb)

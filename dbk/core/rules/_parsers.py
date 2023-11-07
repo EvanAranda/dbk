@@ -5,10 +5,16 @@ from parsy import *  # type: ignore
 from . import _dsl as dsl
 
 space = regex(r"\s+")
+padding = regex(r"\s*")
 scope_sep = string("::")
+category_sep = string("/")
 ident = regex(r"[\w_]+")
 scoped_ident = ident.sep_by(scope_sep, min=2)
 reference = (scoped_ident | (scope_sep >> ident).times(1)).map(dsl.Identifier)
+
+# =============================
+# Tests Parser
+# =============================
 
 tx_field_name = (
     string("desc") | string("description") | string("amount") | string("time")
@@ -37,9 +43,15 @@ referenced_test = reference.map(dsl.ReferencedTest)
 
 test_parser = referenced_test | field_test
 
+
+# =============================
+# Actions Parser
+# =============================
+
 kw_set = string("set")
 kw_to = string("to")
 kw_use = string("use")
+kw_categorize_expense = string("categorize-expense")
 
 set_field_action = seq(
     kw_set >> space >> tx_field_name << space,
@@ -52,4 +64,17 @@ use_ruleset_action = (
 
 referenced_action = reference.map(dsl.ReferencedAction)
 
-action_parser = set_field_action | use_ruleset_action | referenced_action
+categorize_expense_action = (
+    kw_categorize_expense
+    >> space
+    >> (ident.sep_by(padding + category_sep + padding, min=1)).map(
+        dsl.CategorizeExpense
+    )
+)
+
+action_parser = (
+    set_field_action
+    | categorize_expense_action
+    | use_ruleset_action
+    | referenced_action
+)

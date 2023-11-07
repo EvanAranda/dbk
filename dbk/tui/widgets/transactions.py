@@ -1,14 +1,14 @@
 import logging
 
 from rich.text import Text
+from textual.containers import Grid, Horizontal, Vertical
 from textual.reactive import reactive
-from textual.widgets import DataTable, Input, Static, Label
 from textual.screen import ModalScreen
-from textual.containers import Grid, Vertical, Horizontal
+from textual.widgets import DataTable, Input, Label, Static
 
 from dbk.core import models
 
-from ..models.transactions import TransactionsModel, Pagination
+from ..models.transactions import Pagination, TransactionsModel
 from .nav import Navigatable, Navigator
 
 log = logging.getLogger(__name__)
@@ -90,7 +90,7 @@ class Transactions(Navigator, Navigatable):
             self._table.add_row(
                 tx.time.strftime("%Y-%m-%d"),
                 Text(tx.description),
-                tx.type,
+                Text.from_markup(f"[{_tx_type_color(tx.type)}]{tx.type}[/]"),
                 tx.credit_account.name if tx.credit_account else "-",
                 tx.debit_account.name if tx.debit_account else "-",
                 Text.from_markup(
@@ -129,3 +129,17 @@ class Transactions(Navigator, Navigatable):
     def action_next_page(self):
         self._model.pagination.goto_page(self._model.pagination.current_page + 1)
         self.action_reload()
+
+
+def _tx_type_color(tx_type: models.TransactionType):
+    match tx_type:
+        case models.TransactionType.unknown:
+            return "bright_black"
+        case models.TransactionType.spend:
+            return "red"
+        case models.TransactionType.receive:
+            return "green"
+        case models.TransactionType.transfer:
+            return "blue"
+        case models.TransactionType.trade:
+            return "yellow"

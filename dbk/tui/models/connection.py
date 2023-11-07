@@ -5,8 +5,7 @@ from typing import Sequence
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
 
-from dbk.core import models, sync
-from dbk.tui.settings import UserConfig
+from dbk.core import models, persist, sync
 
 log = logging.getLogger(__name__)
 
@@ -15,9 +14,11 @@ class ConnectionModel:
     def __init__(
         self,
         session_factory: orm.sessionmaker[orm.Session],
+        storage: persist.Storage,
         conn_id: int,
     ):
         self._session_factory = session_factory
+        self._storage = storage
         self.conn_id = conn_id
 
     def accounts(self):
@@ -47,8 +48,13 @@ class ConnectionModel:
             )
 
     def add_file_data_sources(self, fnames: Sequence[str]):
-        with self._session_factory() as s:
-            s.expire_on_commit = False
-            conn = s.get_one(models.Connection, self.conn_id)
+        with self._session_factory() as session:
+            session.expire_on_commit = False
+            conn = session.get_one(models.Connection, self.conn_id)
             for fname in fnames:
-                sync.create_file_data_source(s, conn, Path(fname))
+                sync.create_file_data_source(
+                    session,
+                    self._storage,
+                    conn,
+                    Path(fname),
+                )

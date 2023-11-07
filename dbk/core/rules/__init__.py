@@ -26,3 +26,4 @@ from ._compile import (
     compile_test,
     resolve_references,
 )
+from ._engine import RulesEngine

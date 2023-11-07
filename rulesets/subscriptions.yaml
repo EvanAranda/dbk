@@ -2,4 +2,4 @@ subscriptions:
   rules:
     spotify:
       test: desc contains "spotify"
-      then: categorize Expenses/Subscriptions/Spotify
+      then: categorize-expense Subscriptions/Spotify

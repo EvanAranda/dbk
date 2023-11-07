@@ -1,12 +1,23 @@
+from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TextIO
+from typing import TextIO, override
 
 from dbk import errors
 from dbk.core import models
-from dbk.tui.settings import UserConfig
+from dbk.settings import UserConfig
 
 
-class DataSourceStorage:
+class Storage(ABC):
+    @abstractmethod
+    def write_stream(self, ds: models.DataSource, stream: TextIO):
+        """Write the contents of the given stream to the storage for the data source."""
+
+    @abstractmethod
+    def read_stream(self, ds: models.DataSource) -> TextIO:
+        """Read the contents of the given data source from the storage."""
+
+
+class LocalStorage(Storage):
     def __init__(self, config: UserConfig | None = None):
         self.config = config or UserConfig()
 
@@ -20,7 +31,15 @@ class DataSourceStorage:
         conn_d.mkdir(parents=True, exist_ok=True)
         return conn_d / str(ds.id)
 
-    def open_data_source_file(self, ds: models.DataSource) -> TextIO:
+    @override
+    def write_stream(self, ds: models.DataSource, stream: TextIO):
+        if ds.type != models.DataSourceType.file:
+            raise errors.DbkError(f"Expected file data source, got {ds.type}")
+        with open(self.get_data_source_path(ds), "w") as f:
+            f.write(stream.read())
+
+    @override
+    def read_stream(self, ds: models.DataSource) -> TextIO:
         if ds.type != models.DataSourceType.file:
             raise errors.DbkError(f"Expected file data source, got {ds.type}")
         return open(self.get_data_source_path(ds), "r")

@@ -1,10 +1,11 @@
-import os
 import logging
+import os
+
 import sqlalchemy.orm as orm
 
-from dbk.logging import setup_logging
 from dbk.db import make_connection
-from dbk.tui.settings import RootConfig, UserConfig
+from dbk.logging import setup_logging
+from dbk.settings import RootConfig, UserConfig
 
 
 class App:

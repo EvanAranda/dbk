@@ -1,13 +1,12 @@
-import asyncio
 import os
-import time
 
 import sqlalchemy.orm as orm
 
-from dbk import core, db, background
+from dbk import background, core, db
+from dbk.core import persist
 from dbk.logging import setup_logging
+from dbk.settings import RootConfig, UserConfig
 from dbk.tui import MyApp, MyAppModel
-from dbk.tui.settings import RootConfig, UserConfig
 
 root_config = RootConfig()  # type: ignore
 user_config = UserConfig()
@@ -19,10 +18,11 @@ setup_logging("dbk.tui.log")
 
 engine = db.make_connection(root_config.db_url)
 session = orm.sessionmaker(bind=engine)
+storage = persist.LocalStorage(user_config)
 
 core.initialize(session)
 
 with background.WorkerPool(3) as pool:
-    model = MyAppModel(session, pool)
+    model = MyAppModel(session, pool, storage)
     app = MyApp(model)
     app.run()

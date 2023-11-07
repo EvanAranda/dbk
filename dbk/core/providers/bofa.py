@@ -91,16 +91,11 @@ class BofaProvider(Provider[BofaData]):
         if source.type != models.DataSourceType.file:
             return
 
-        source_storage = persist.DataSourceStorage()
         reader_factory = make_reader(bofa_account_type)
-        with source_storage.open_data_source_file(source) as f:
+        with context.storage.read_stream(source) as f:
             txs = list(parse_txs(conn, source, account, reader_factory(f)))
 
-        stmt = (
-            sa_sqlite.insert(models.Transaction)
-            .values(txs)
-            .on_conflict_do_nothing(index_elements=[models.Transaction.unique_hash])
-        )
+        stmt = sa_sqlite.insert(models.Transaction).values(txs)
         context.session.execute(stmt)
         context.session.commit()
 
@@ -122,17 +117,12 @@ def parse_txs(conn, source, account, txs: Iterable[dict]):
             conn_id=conn.id,
             source_id=source.id,
             time=_tx["time"],
+            type=models.TransactionType.unknown,
             description=_tx["description"],
             credit_account_id=credit_account_id,
             debit_account_id=debit_account_id,
             credit_amount=credit_amount,
             debit_amount=debit_amount,
-            unique_hash=sync.tx_checksum(
-                conn.id,
-                _tx["time"],
-                _tx["description"],
-                _tx["amount"],
-            ),
         )
 
 

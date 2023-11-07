@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, TextIO
 
 import sqlalchemy.orm as orm
 from pydantic import BaseModel
+from dbk.core import persist
 
 if TYPE_CHECKING:
     from dbk.core import models
@@ -12,6 +13,7 @@ if TYPE_CHECKING:
 @dataclass
 class SyncContext[T: BaseModel]:
     session: orm.Session
+    storage: persist.Storage
     provider: "Provider[T]"
     connection: "models.Connection"
     data_source: Optional["models.DataSource"] = None
@@ -21,6 +23,10 @@ class SyncContext[T: BaseModel]:
         return self.provider.custom_data_model().model_validate(
             self.connection.provider_data
         )
+
+    def read_data_source(self) -> TextIO:
+        assert self.data_source is not None, "data_source must be set"
+        return self.storage.read_stream(self.data_source)
 
 
 class Provider[T: BaseModel](ABC):

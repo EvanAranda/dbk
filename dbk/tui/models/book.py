@@ -1,13 +1,11 @@
 import logging
-import time
-from datetime import datetime
 
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
 from pydantic import BaseModel
 
-from dbk.core import models, providers, sync
-from dbk.background import WorkerPool, jobs, Job
+from dbk.background import WorkerPool, jobs
+from dbk.core import models, persist, providers, rules
 
 from .account import AccountModel
 from .connection import ConnectionModel
@@ -22,16 +20,20 @@ class BookModel:
         book_id: int,
         session_factory: orm.sessionmaker[orm.Session],
         background_workers: WorkerPool,
+        storage: persist.Storage,
+        rules_engine: rules.RulesEngine,
     ):
         self._session_factory = session_factory
         self._workers = background_workers
+        self._storage = storage
+        self._rules_engine = rules_engine
         self.book_id = book_id
 
     def account_model(self, account_id: int):
         return AccountModel(self._session_factory, account_id)
 
     def connection_model(self, conn_id: int):
-        return ConnectionModel(self._session_factory, conn_id)
+        return ConnectionModel(self._session_factory, self._storage, conn_id)
 
     def book(self):
         with self._session_factory() as sess:
@@ -81,13 +83,11 @@ class BookModel:
 
         log.info("created connection %s", conn.conn_name)
 
-        # need to sync the connection to get accounts and transactions..
-        # I think this should be done in stages:
-        # 1. try an intital sync without any input data in case the connection has accounts it can populate.
-        # 2. when user provides data or request a resync, other data like transactions and dynamic accounts can be populated.
-
     def sync_connection(self, conn: models.Connection):
         return self._workers.submit(jobs.sync_data_sources(conn.id))
+
+    def apply_rules(self):
+        return self._workers.submit(jobs.apply_rules(self.book_id))
 
     def create_account(self, args: CreateAccountArgs):
         with self._session_factory() as s, s.begin():
